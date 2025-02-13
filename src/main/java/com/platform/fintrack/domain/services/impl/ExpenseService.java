@@ -7,6 +7,7 @@ import com.platform.fintrack.domain.models.User;
 import com.platform.fintrack.domain.services.IExpenseService;
 import com.platform.fintrack.domain.services.IUserService;
 import com.platform.fintrack.infrastructure.exceptions.DataConflictException;
+import com.platform.fintrack.infrastructure.exceptions.InvalidDataException;
 import com.platform.fintrack.infrastructure.exceptions.UnexpectedException;
 import com.platform.fintrack.infrastructure.repository.IExpenseRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,13 +33,13 @@ public class ExpenseService implements IExpenseService {
 
         if(dto.amount().compareTo(BigDecimal.ZERO) <= 0) {
             log.error("the expense of the user with id {} cannot be less than or equal to 0", user.getId());
-            throw new DataConflictException("the expense cannot be less than or equal to 0");
+            throw new InvalidDataException("the expense cannot be less than or equal to 0");
         }
 
         final Expense expense = new Expense(null, dto.description(), dto.amount(), dto.date(),
                 dto.type(), dto.isInstallments(), dto.installments(), user, null);
 
-        if(dto.isInstallments()) {
+        if(Boolean.TRUE.equals(dto.isInstallments())) {
             List<Installment> installments = generateInstallments(expense);
             expense.setInstallmentList(installments);
         }

@@ -6,6 +6,7 @@ import com.platform.fintrack.domain.models.Expense;
 import com.platform.fintrack.domain.models.Installment;
 import com.platform.fintrack.domain.models.User;
 import com.platform.fintrack.infrastructure.exceptions.DataConflictException;
+import com.platform.fintrack.infrastructure.exceptions.InvalidDataException;
 import com.platform.fintrack.infrastructure.exceptions.UnexpectedException;
 import com.platform.fintrack.infrastructure.repository.IExpenseRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,11 +95,11 @@ class ExpenseServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw DataConflictException if expense amount is less than or equal to zero")
-    void shouldThrowDataConflictExceptionIfAmountIsZeroOrNegative() {
+    @DisplayName("Should throw InvalidDataException if expense amount is less than or equal to zero")
+    void shouldThrowInvalidDataExceptionIfAmountIsZeroOrNegative() {
         when(userService.findByToken(token)).thenReturn(user);
 
-        assertThrows(DataConflictException.class, () -> expenseService.create(token, invalidExpenseDTO));
+        assertThrows(InvalidDataException.class, () -> expenseService.create(token, invalidExpenseDTO));
     }
 
     @Test
