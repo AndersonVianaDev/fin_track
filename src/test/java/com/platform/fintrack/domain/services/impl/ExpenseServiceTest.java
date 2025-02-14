@@ -5,6 +5,7 @@ import com.platform.fintrack.domain.enums.ExpenseType;
 import com.platform.fintrack.domain.models.Expense;
 import com.platform.fintrack.domain.models.Installment;
 import com.platform.fintrack.domain.models.User;
+import com.platform.fintrack.domain.services.IInstallmentService;
 import com.platform.fintrack.infrastructure.exceptions.DataConflictException;
 import com.platform.fintrack.infrastructure.exceptions.InvalidDataException;
 import com.platform.fintrack.infrastructure.exceptions.UnexpectedException;
@@ -39,6 +40,9 @@ class ExpenseServiceTest {
     @Mock
     private IExpenseRepository repository;
 
+    @Mock
+    private IInstallmentService installmentService;
+
     @InjectMocks
     private ExpenseService expenseService;
 
@@ -49,7 +53,7 @@ class ExpenseServiceTest {
     private ExpenseDTO invalidExpenseDTO;
     private Expense expense;
     private Expense expenseWithInstallments;
-
+    private ExpenseDTO invalidInstallmentsDTO;
 
     @BeforeEach
     void setUp() {
@@ -78,6 +82,15 @@ class ExpenseServiceTest {
         expenseWithInstallments.setInstallments(12);
         expenseWithInstallments.setUser(user);
         expenseWithInstallments.setInstallmentList(List.of(new Installment()));
+
+        invalidInstallmentsDTO = new ExpenseDTO(
+                "Phone",
+                new BigDecimal("1200.00"),
+                LocalDate.now(),
+                ExpenseType.INSTALLMENTS,
+                true,
+                1
+        );
     }
 
 
@@ -112,9 +125,18 @@ class ExpenseServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw InvalidDataException if installments are less than 2 when isInstallments is true")
+    void shouldThrowInvalidDataExceptionIfInstallmentsLessThanTwo() {
+        when(userService.findByToken(token)).thenReturn(user);
+
+        assertThrows(InvalidDataException.class, () -> expenseService.create(token, invalidInstallmentsDTO));
+    }
+
+    @Test
     @DisplayName("Should create installments when isInstallments is true")
     void shouldCreateInstallmentsSuccessfully() {
         when(userService.findByToken(token)).thenReturn(user);
+        when(installmentService.generateInstallments(any(Expense.class))).thenReturn(List.of(new Installment()));
         when(repository.save(any(Expense.class))).thenReturn(expenseWithInstallments);
 
         Expense createdExpense = expenseService.create(token, expenseDTOWithInstallments);
