@@ -5,8 +5,8 @@ import com.platform.fintrack.domain.models.Expense;
 import com.platform.fintrack.domain.models.Installment;
 import com.platform.fintrack.domain.models.User;
 import com.platform.fintrack.domain.services.IExpenseService;
+import com.platform.fintrack.domain.services.IInstallmentService;
 import com.platform.fintrack.domain.services.IUserService;
-import com.platform.fintrack.infrastructure.exceptions.DataConflictException;
 import com.platform.fintrack.infrastructure.exceptions.InvalidDataException;
 import com.platform.fintrack.infrastructure.exceptions.UnexpectedException;
 import com.platform.fintrack.infrastructure.repository.IExpenseRepository;
@@ -15,9 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.List;
+
+import static java.util.Objects.isNull;
 
 @Service
 @Slf4j
@@ -26,6 +26,7 @@ public class ExpenseService implements IExpenseService {
 
     private final IExpenseRepository repository;
     private final IUserService userService;
+    private final IInstallmentService installmentService;
 
     @Override
     public Expense create(final String token, final ExpenseDTO dto) {
@@ -40,7 +41,13 @@ public class ExpenseService implements IExpenseService {
                 dto.type(), dto.isInstallments(), dto.installments(), user, null);
 
         if(Boolean.TRUE.equals(dto.isInstallments())) {
-            List<Installment> installments = generateInstallments(expense);
+
+            if(isNull(expense.getInstallments()) || expense.getInstallments() < 2) {
+                log.error("Installments must be at least 2 when isInstallments is true for user with id {}", user.getId());
+                throw new InvalidDataException("Installments must be at least 2 when isInstallments is true");
+            }
+
+            List<Installment> installments = installmentService.generateInstallments(expense);
             expense.setInstallmentList(installments);
         }
 
@@ -50,23 +57,5 @@ public class ExpenseService implements IExpenseService {
             log.error("Unexpected error saving to database, message: {}", e.getMessage());
             throw new UnexpectedException("Unexpected error saving to database");
         }
-    }
-
-    private List<Installment> generateInstallments(Expense expense) {
-        final List<Installment> installments = new ArrayList<>();
-        final BigDecimal installmentAmount = expense.getAmount()
-                .divide(BigDecimal.valueOf(expense.getInstallments()), RoundingMode.HALF_UP);
-
-        for (int i = 1; i <= expense.getInstallments(); i++) {
-            Installment installment = new Installment();
-            installment.setNumber(i);
-            installment.setAmount(installmentAmount);
-            installment.setDueDate(expense.getDate().plusMonths(i - 1));
-            installment.setExpense(expense);
-
-            installments.add(installment);
-        }
-
-        return installments;
     }
 }

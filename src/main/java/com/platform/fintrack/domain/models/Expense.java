@@ -18,6 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class Expense {
 
+    // todo: boolean se tem juros e se tiver quanto de juros que vai entrar
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
